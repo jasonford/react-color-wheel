@@ -18,7 +18,7 @@ export default class ColorWheel extends React.Component {
       }
     }),
     numSaturationSegments: this.props.saturationSegments || 9,
-    numLightnessSegments: this.props.lightnessSegments || 9
+    numLightnessSegments: this.props.lightnessSegments || 18
   }
 
   componentWillMount = () => {
@@ -49,7 +49,8 @@ export default class ColorWheel extends React.Component {
                 let segmentSweep = sweep/this.state.numLightnessSegments;
                 for (let s=0; s<this.state.numSaturationSegments; s++) {
                   for (let l=0; l<this.state.numLightnessSegments; l++) {
-                    let saturation = s/(this.state.numSaturationSegments-1) * 100;
+                    // ensure saturations of 100 and 0 are available
+                    let saturation = (this.state.numSaturationSegments-1-s)/(this.state.numSaturationSegments-1) * 100;
                     // disallow lightness of 0 or 100 since those are just black and white
                     let lightness = (l+1)/(this.state.numLightnessSegments+1) * 100;
                     slSegments.push(
