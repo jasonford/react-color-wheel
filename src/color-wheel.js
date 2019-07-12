@@ -1,4 +1,5 @@
 import React from 'react';
+import { getSectorRadius } from './utils';
 
 export default class ColorWheel extends React.Component {
   state = {
@@ -45,9 +46,12 @@ export default class ColorWheel extends React.Component {
             ({hue, sweep, angle, selected}) => {
               if (selected) {
                 let slSegments = []
-                let segmentHeight = (this.state.outerRadius - this.state.innerRadius)/this.state.numSaturationSegments;
                 let segmentSweep = sweep/this.state.numLightnessSegments;
                 for (let s=0; s<this.state.numSaturationSegments; s++) {
+                  // set segment inner and outer arcs (now inside saturation for-loop, changes for each saturation "row")
+                  const segmentOuterArcRadius = getSectorRadius((s+1)/this.state.numSaturationSegments,this.state.innerRadius, this.state.outerRadius)
+                  const segmentInnerArcRadius = getSectorRadius(s/this.state.numSaturationSegments, this.state.innerRadius, this.state.outerRadius)
+
                   for (let l=0; l<this.state.numLightnessSegments; l++) {
                     // ensure saturations of 100 and 0 are available
                     let saturation = (this.state.numSaturationSegments-1-s)/(this.state.numSaturationSegments-1) * 100;
@@ -60,10 +64,10 @@ export default class ColorWheel extends React.Component {
                           this.getSectorPath(
                             0,
                             0,
-                            this.state.innerRadius + (s+1) * segmentHeight,
+                            segmentOuterArcRadius,
                             -sweep/2 + segmentSweep * l,
                             -sweep/2 + segmentSweep * (l+1),
-                            this.state.innerRadius + s * segmentHeight
+                            segmentInnerArcRadius
                           )
                         }
                         transform={`rotate(${angle})`}
@@ -76,7 +80,7 @@ export default class ColorWheel extends React.Component {
                     )
                   }
                 }
-                
+
                 return (
                   <g key="slsegments">
                     {slSegments}
@@ -159,7 +163,7 @@ export default class ColorWheel extends React.Component {
   }
 
   colorForAngle = ( angle ) => {
-    return 
+    return
   }
 
   getSectorPath(x, y, outerRadius, a1, a2, innerRadius = 0) {
