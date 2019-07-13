@@ -233,6 +233,8 @@ export default class ColorWheel extends React.Component {
     this.setState({
       hueSegments: [...this.state.hueSegments],
       previewHue: null,
+      saturation: 100,
+      lightness: 50,
       hue
     });
   }
