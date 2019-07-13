@@ -60,6 +60,7 @@ export default class ColorWheel extends React.Component {
   }
 
   selectElement = e => {
+    if (e.touches.length > 0) return;
     const x = e.changedTouches[0].clientX;
     const y = e.changedTouches[0].clientY;
     const el = document.elementFromPoint(x, y);
