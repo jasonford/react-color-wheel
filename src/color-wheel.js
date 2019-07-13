@@ -27,6 +27,7 @@ export default class ColorWheel extends React.Component {
   }
 
   componentWillMount = () => {
+    this.svg = React.createRef();
     window.addEventListener('touchmove', this.preventDefault, {passive: false});
   }
 
@@ -46,8 +47,12 @@ export default class ColorWheel extends React.Component {
     const x = e.touches[0].pageX;
     const y = e.touches[0].pageY;
     const el = document.elementFromPoint(x, y);
+    e.stopPropagation();
+    e.preventDefault();
     if (el && el.preview) {
       this.lastFocusedElement = el;
+      let centerX = this.svg.offsetLeft + this.svg.offsetWidth / 2;
+      let centerY = this.svg.offsetTop + this.svg.offsetHeight / 2;
       this.setState({
         previewAngle: 90 - Math.atan2(x - window.innerWidth/2, y - window.innerHeight/2) * 180 / Math.PI 
       });
@@ -70,6 +75,8 @@ export default class ColorWheel extends React.Component {
   render = () => {
     return (
       <svg
+        ref={this.svg}
+        style={{touchAction: 'none'}}
         viewBox="-50, -50, 100, 100"
         width="100%"
         height="100%"
