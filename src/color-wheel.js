@@ -179,14 +179,18 @@ export default class ColorWheel extends React.Component {
           cy={0}
           r={this.state.innerRadius}
           fill={this.selectedColor() || '#FFFFFF'}
+          stroke={this.selectedColor() || '#FFFFFF'}
+          strokeWidth={0.1}
         />
         {
           this.state.previewHue !== null
           &&
           <path
             d={getSectorPath(this.state.innerRadius, -90, 90)}
-            fill={this.previewColor() || 'none'}
             transform={`rotate(${this.state.previewAngle})`}
+            fill={this.previewColor() || 'none'}
+            stroke={this.previewColor() || 'none'}
+            strokeWidth={0.1}
           />
         }
       </svg>
