@@ -84,7 +84,6 @@ export default class ColorWheel extends React.Component {
   }
 
   render = () => {
-    console.log('rendering!')
     return (
       <svg
         ref={this.svg}
@@ -103,44 +102,44 @@ export default class ColorWheel extends React.Component {
                 return (
                   <g key="slsegments">
                     {
-                      lightnessSaturationSectors.map(sector => {
-                        const segments = [];
-                        sector.saturationSegments.forEach( saturationSegment => {
-                          segments.push(
-                            <path
-                              key={`${saturationSegment.angle},${saturationSegment.hue},${saturationSegment.saturation},${saturationSegment.lightness}`}
-                              ref={
-                                current => {
-                                  if (current === null) return;
-                                  current.preview = () => {
-                                    this.setState({
-                                      previewHue: saturationSegment.hue,
-                                      previewSaturation: saturationSegment.saturation,
-                                      previewLightness: saturationSegment.lightness
-                                    });
-                                  }
-                                  current.select = () => {
-                                    this.setState({
-                                      previewHue: null,
-                                      previewSaturation: null,
-                                      previewLigntness: null,
-                                      hue: saturationSegment.hue,
-                                      saturation: saturationSegment.saturation,
-                                      lightness: saturationSegment.lightness
-                                    });
+                      lightnessSaturationSectors.map(
+                        sector => (
+                          sector.saturationSegments.map(
+                            saturationSegment => (
+                              <path
+                                key={`${saturationSegment.angle},${saturationSegment.hue},${saturationSegment.saturation},${saturationSegment.lightness}`}
+                                ref={
+                                  current => {
+                                    if (current === null) return;
+                                    current.preview = () => {
+                                      this.setState({
+                                        previewHue: saturationSegment.hue,
+                                        previewSaturation: saturationSegment.saturation,
+                                        previewLightness: saturationSegment.lightness
+                                      });
+                                    }
+                                    current.select = () => {
+                                      this.setState({
+                                        previewHue: null,
+                                        previewSaturation: null,
+                                        previewLigntness: null,
+                                        hue: saturationSegment.hue,
+                                        saturation: saturationSegment.saturation,
+                                        lightness: saturationSegment.lightness
+                                      });
+                                    }
                                   }
                                 }
-                              }
-                              d={ saturationSegment.pathData }
-                              transform={`rotate(${saturationSegment.angle})`}
-                              fill={`hsl(${saturationSegment.hue}, ${saturationSegment.saturation}%, ${saturationSegment.lightness}%)`}
-                              stroke={`hsl(${saturationSegment.hue}, ${saturationSegment.saturation}%, ${saturationSegment.lightness}%)`}
-                              strokeWidth='0.1'
-                            />
+                                d={ saturationSegment.pathData }
+                                transform={`rotate(${saturationSegment.angle})`}
+                                fill={`hsl(${saturationSegment.hue}, ${saturationSegment.saturation}%, ${saturationSegment.lightness}%)`}
+                                stroke={`hsl(${saturationSegment.hue}, ${saturationSegment.saturation}%, ${saturationSegment.lightness}%)`}
+                                strokeWidth='0.1'
+                              />
+                            )
                           )
-                        })
-                        return segments;
-                      })
+                        )
+                      )
                     }
                   </g>
                 );
@@ -199,7 +198,6 @@ export default class ColorWheel extends React.Component {
   }
 
   selectHue(hue) {
-    console.log('selecting hue...')
     //  this function handles all dimension calculations
     //  for the layout of necessary sectors
     this.state.hueSegments.forEach((segment, index) => {
