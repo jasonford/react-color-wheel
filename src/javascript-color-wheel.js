@@ -46,6 +46,86 @@ export default class JavascriptColorWheel {
     }
   }
 
+  getSegments = () => {
+    return (
+      this.state.hueSegments.map(
+        ({hue, pathData, sweep, angle, selected, lightnessSaturationSectors, ref}) => {
+          if (selected) {
+            return (
+              <g key="slsegments">
+                {
+                  lightnessSaturationSectors.map(
+                    sector => (
+                      sector.saturationSegments.map(
+                        saturationSegment => (
+                          <path
+                            key={`${saturationSegment.angle},${saturationSegment.hue},${saturationSegment.saturation},${saturationSegment.lightness}`}
+                            ref={
+                              current => {
+                                if (current === null) return;
+                                current.preview = () => {
+                                  this.setState({
+                                    previewHue: saturationSegment.hue,
+                                    previewSaturation: saturationSegment.saturation,
+                                    previewLightness: saturationSegment.lightness
+                                  });
+                                }
+                                current.select = () => {
+                                  this.setState({
+                                    previewHue: null,
+                                    previewSaturation: null,
+                                    previewLigntness: null,
+                                    hue: saturationSegment.hue,
+                                    saturation: saturationSegment.saturation,
+                                    lightness: saturationSegment.lightness
+                                  });
+                                }
+                              }
+                            }
+                            d={ saturationSegment.pathData }
+                            transform={`rotate(${saturationSegment.angle})`}
+                            fill={`hsl(${saturationSegment.hue}, ${saturationSegment.saturation}%, ${saturationSegment.lightness}%)`}
+                            stroke={`hsl(${saturationSegment.hue}, ${saturationSegment.saturation}%, ${saturationSegment.lightness}%)`}
+                            strokeWidth='0.1'
+                          />
+                        )
+                      )
+                    )
+                  )
+                }
+              </g>
+            );
+          }
+          else {
+            return (
+              <path
+                ref={
+                  current => {
+                    if (current === null) return;
+                    current.preview = () => {
+                      this.setState({
+                        previewHue: hue,
+                        previewSaturation: 100,
+                        previewLightness: 50
+                      });
+                    }
+                    current.select = () => this.selectHue(hue)
+                  }
+                }
+                key={ hue }
+                d={ pathData }
+                transform={`rotate(${angle})`}
+                fill={`hsl(${hue}, 100%, 50%)`}
+                stroke={`hsl(${hue}, 100%, 50%)`}
+                strokeWidth={0.1}
+              />
+            );
+          }
+        }
+      )
+    );
+  }
+
   onChange = (handler) => this.changeHandlers.push(handler);
 
   selectedColor = () => {
@@ -131,7 +211,7 @@ export default class JavascriptColorWheel {
           nextAngle += otherSegmentSweep;
         })
       }
-    })
+    });
     this.setState({
       hueSegments: [...this.state.hueSegments],
       previewHue: null,
