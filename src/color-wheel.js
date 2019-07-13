@@ -44,23 +44,24 @@ export default class ColorWheel extends React.Component {
   }
 
   focusElement = e => {
-    const x = e.touches[0].pageX;
-    const y = e.touches[0].pageY;
+    const x = e.touches[0].clientX;
+    const y = e.touches[0].clientY;
     const el = document.elementFromPoint(x, y);
     if (el && el.preview) {
       this.lastFocusedElement = el;
-      let centerX = this.svg.offsetLeft + this.svg.offsetWidth / 2;
-      let centerY = this.svg.offsetTop + this.svg.offsetHeight / 2;
+      let dimensions = this.svg.current.getBoundingClientRect();
+      let centerX = dimensions.left + dimensions.width / 2;
+      let centerY = dimensions.top + dimensions.height / 2;
       this.setState({
-        previewAngle: 90 - Math.atan2(x - window.innerWidth/2, y - window.innerHeight/2) * 180 / Math.PI 
+        previewAngle: 90 - Math.atan2(x - centerX, y - centerY) * 180 / Math.PI
       });
       el.preview();
     }
   }
 
   selectElement = e => {
-    const x = e.changedTouches[0].pageX;
-    const y = e.changedTouches[0].pageY;
+    const x = e.changedTouches[0].clientX;
+    const y = e.changedTouches[0].clientY;
     const el = document.elementFromPoint(x, y);
     if (el && el.select) {
       el.select();
