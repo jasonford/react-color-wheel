@@ -1,5 +1,10 @@
 import React from 'react';
-import { getSectorRadius } from './utils';
+import { getSectorRadius, getSectorPath } from './utils';
+
+const DEFAULTS = {
+  OUTER_RADIUS: 50,
+  INNER_RADIUS: 15
+}
 
 export default class ColorWheel extends React.Component {
   state = {
@@ -11,19 +16,25 @@ export default class ColorWheel extends React.Component {
     previewLightness: null,
     selectedSweep: 180,
     dragging: false,
-    innerRadius: 15,
-    outerRadius: 50,
-    hueSegments: [...Array(this.props.hueSegments || 17)].map((_, i) => {
-      const numSegs = this.props.hueSegments || 17;
+    innerRadius: DEFAULTS.INNER_RADIUS,
+    outerRadius: DEFAULTS.OUTER_RADIUS,
+    hueSegments: [...Array(this.props.hueSegments || 9)].map((_, i) => {
+      const numSegs = this.props.hueSegments || 9;
       return {
         hue: 360/numSegs * i,
         angle: 360/numSegs * i,
         sweep: 360/numSegs,
-        ref: React.createRef()
+        ref: React.createRef(),
+        pathData: getSectorPath(
+          DEFAULTS.INNER_RADIUS,
+          -360/numSegs/2,
+          360/numSegs/2,
+          DEFAULTS.OUTER_RADIUS
+        )
       }
     }),
     numSaturationSegments: this.props.saturationSegments || 9,
-    numLightnessSegments: this.props.lightnessSegments || 18
+    numLightnessSegments: this.props.lightnessSegments || 9
   }
 
   componentWillMount = () => {
@@ -73,6 +84,7 @@ export default class ColorWheel extends React.Component {
   }
 
   render = () => {
+    console.log('rendering!')
     return (
       <svg
         ref={this.svg}
@@ -86,65 +98,50 @@ export default class ColorWheel extends React.Component {
       >
         {
           this.state.hueSegments.map(
-            ({hue, sweep, angle, selected, ref}) => {
+            ({hue, pathData, sweep, angle, selected, lightnessSaturationSectors, ref}) => {
               if (selected) {
-                let slSegments = []
-                let segmentSweep = sweep/this.state.numLightnessSegments;
-                for (let s=0; s<this.state.numSaturationSegments; s++) {
-                  // set segment inner and outer arcs (now inside saturation for-loop, changes for each saturation "row")
-                  const segmentOuterArcRadius = getSectorRadius((s+1)/this.state.numSaturationSegments,this.state.innerRadius, this.state.outerRadius)
-                  const segmentInnerArcRadius = getSectorRadius(s/this.state.numSaturationSegments, this.state.innerRadius, this.state.outerRadius)
-
-                  for (let l=0; l<this.state.numLightnessSegments; l++) {
-                    // ensure saturations of 100 and 0 are available
-                     let saturation = (this.state.numSaturationSegments-1-s)/(this.state.numSaturationSegments-1) * 100;
-                    // disallow lightness of 0 or 100 since those are just black and white
-                    let lightness = (l+1)/(this.state.numLightnessSegments+1) * 100;
-                    slSegments.push(
-                      <path
-                        ref={
-                          current => {
-                            if (current === null) return;
-                            current.preview = () => {
-                              this.setState({
-                                previewHue: hue,
-                                previewSaturation: saturation,
-                                previewLightness: lightness
-                              });
-                            }
-                            current.select = () => {
-                              this.setState({
-                                previewHue: null,
-                                previewSaturation: null,
-                                previewLigntness: null,
-                                hue,
-                                saturation,
-                                lightness
-                              });
-                            }
-                          }
-                        }
-                        key={`${s},${l}`}
-                        d={
-                          this.getSectorPath(
-                            segmentOuterArcRadius,
-                            -sweep/2 + segmentSweep * l,
-                            -sweep/2 + segmentSweep * (l+1),
-                            segmentInnerArcRadius
-                          )
-                        }
-                        transform={`rotate(${angle})`}
-                        fill={`hsl(${hue}, ${saturation}%, ${lightness}%)`}
-                        stroke={`hsl(${hue}, ${saturation}%, ${lightness}%)`}
-                        strokeWidth='0.1'
-                      />
-                    )
-                  }
-                }
-
                 return (
                   <g key="slsegments">
-                    {slSegments}
+                    {
+                      lightnessSaturationSectors.map(sector => {
+                        const segments = [];
+                        sector.saturationSegments.forEach( saturationSegment => {
+                          segments.push(
+                            <path
+                              key={`${saturationSegment.angle},${saturationSegment.hue},${saturationSegment.saturation},${saturationSegment.lightness}`}
+                              ref={
+                                current => {
+                                  if (current === null) return;
+                                  current.preview = () => {
+                                    this.setState({
+                                      previewHue: saturationSegment.hue,
+                                      previewSaturation: saturationSegment.saturation,
+                                      previewLightness: saturationSegment.lightness
+                                    });
+                                  }
+                                  current.select = () => {
+                                    this.setState({
+                                      previewHue: null,
+                                      previewSaturation: null,
+                                      previewLigntness: null,
+                                      hue: saturationSegment.hue,
+                                      saturation: saturationSegment.saturation,
+                                      lightness: saturationSegment.lightness
+                                    });
+                                  }
+                                }
+                              }
+                              d={ saturationSegment.pathData }
+                              transform={`rotate(${saturationSegment.angle})`}
+                              fill={`hsl(${saturationSegment.hue}, ${saturationSegment.saturation}%, ${saturationSegment.lightness}%)`}
+                              stroke={`hsl(${saturationSegment.hue}, ${saturationSegment.saturation}%, ${saturationSegment.lightness}%)`}
+                              strokeWidth='0.1'
+                            />
+                          )
+                        })
+                        return segments;
+                      })
+                    }
                   </g>
                 );
               }
@@ -167,14 +164,7 @@ export default class ColorWheel extends React.Component {
                       }
                     }
                     key={ hue }
-                    d={
-                      this.getSectorPath(
-                        this.state.outerRadius,
-                        -sweep/2,
-                        sweep/2,
-                        this.state.innerRadius
-                      )
-                    }
+                    d={ pathData }
                     transform={`rotate(${angle})`}
                     fill={`hsl(${hue}, 100%, 50%)`}
                     stroke={`hsl(${hue}, 100%, 50%)`}
@@ -195,7 +185,7 @@ export default class ColorWheel extends React.Component {
           this.state.previewHue !== null
           &&
           <path
-            d={this.getSectorPath(this.state.innerRadius, -90, 90)}
+            d={getSectorPath(this.state.innerRadius, -90, 90)}
             fill={this.previewColor() || 'none'}
             transform={`rotate(${this.state.previewAngle})`}
           />
@@ -209,21 +199,72 @@ export default class ColorWheel extends React.Component {
   }
 
   selectHue(hue) {
+    console.log('selecting hue...')
+    //  this function handles all dimension calculations
+    //  for the layout of necessary sectors
     this.state.hueSegments.forEach((segment, index) => {
       const selected = segment.hue === hue;
       segment.selected = selected;
       if (selected) {
-        segment.sweep = this.state.selectedSweep; // set a larger sweep angle
+        let selectedSweep = this.state.selectedSweep;
+        segment.pathData = getSectorPath(
+          this.state.outerRadius,
+          -selectedSweep/2,
+          selectedSweep/2,
+          this.state.innerRadius
+        )
+
+        //  create saturation and lightness segments and insert into sectors
+        segment.lightnessSaturationSectors = [];
+        for (let l=0; l<this.state.numLightnessSegments; l++) {
+          const lightness = (l+1)/(this.state.numLightnessSegments+1) * 100;
+          const lightnessSaturationSector = {
+            hue: segment.hue,
+            angle: segment.angle,
+            saturationSegments: []
+          }
+          segment.lightnessSaturationSectors.push(lightnessSaturationSector);
+          for (let s=0; s<this.state.numSaturationSegments; s++) {
+            // set segment inner and outer arcs (now inside saturation for-loop, changes for each saturation "row")
+            const segmentOuterArcRadius = getSectorRadius((s+1)/this.state.numSaturationSegments,this.state.innerRadius, this.state.outerRadius)
+            const segmentInnerArcRadius = getSectorRadius(s/this.state.numSaturationSegments, this.state.innerRadius, this.state.outerRadius)
+
+            const saturation = (this.state.numSaturationSegments-1-s)/(this.state.numSaturationSegments-1) * 100;
+            // ensure saturations of 100 and 0 are available
+            // disallow lightness of 0 or 100 since those are just black and white
+            lightnessSaturationSector.saturationSegments.push(
+              {
+                angle: lightnessSaturationSector.angle,
+                pathData: getSectorPath(
+                  segmentOuterArcRadius,
+                  -selectedSweep/2 + selectedSweep/this.state.numLightnessSegments*l,
+                  -selectedSweep/2 + selectedSweep/this.state.numLightnessSegments*(l+1),
+                  segmentInnerArcRadius
+                ),
+                hue,
+                saturation,
+                lightness
+              }
+            )
+          }
+        }
+
         // get other segments in their order after our selected segment
         const otherSegments = [
           ...this.state.hueSegments.slice(index+1),
           ...this.state.hueSegments.slice(0, index)
         ];
-        let otherSegmentSweep = (360 - segment.sweep) / otherSegments.length;
-        let nextAngle = segment.angle + segment.sweep/2 + otherSegmentSweep/2;
+        let otherSegmentSweep = (360 - this.state.selectedSweep) / otherSegments.length;
+        let nextAngle = segment.angle + this.state.selectedSweep/2 + otherSegmentSweep/2;
         otherSegments.forEach( otherSegment => {
           otherSegment.sweep = otherSegmentSweep;
           otherSegment.angle = nextAngle%360;
+          otherSegment.pathData = getSectorPath(
+            this.state.outerRadius,
+            -otherSegmentSweep/2,
+            otherSegmentSweep/2,
+            this.state.innerRadius
+          )
           nextAngle += otherSegmentSweep;
         })
       }
@@ -254,28 +295,5 @@ export default class ColorWheel extends React.Component {
     if (this.state.hue !== undefined) {
       return `hsl(${this.state.hue}, ${this.state.saturation}%, ${this.state.lightness}%)`
     }
-  }
-
-  colorForAngle = ( angle ) => {
-    return
-  }
-
-  getSectorPath(outerRadius, a1, a2, innerRadius = 0, x = 0, y = 0) {
-    const degtorad = Math.PI / 180;
-    const x1 = (Math.cos(degtorad * a2) * innerRadius) + x;
-    const y1 = (-Math.sin(degtorad * a2) * innerRadius) + y;
-    const x2 = (Math.cos(degtorad * a1) * innerRadius) + x;
-    const y2 = (-Math.sin(degtorad * a1) * innerRadius) + y;
-    const x3 = (Math.cos(degtorad * a1) * outerRadius) + x;
-    const y3 = (-Math.sin(degtorad * a1) * outerRadius) + y;
-    const x4 = (Math.cos(degtorad * a2) * outerRadius) + x;
-    const y4 = (-Math.sin(degtorad * a2) * outerRadius) + y;
-    return `
-      M ${x1} ${y1}
-      A ${innerRadius} ${innerRadius} 0 0 1 ${x2} ${y2}
-      L ${x3} ${y3}
-      A ${outerRadius} ${outerRadius} 0 0 0 ${x4} ${y4}
-      Z
-    `;
   }
 }
