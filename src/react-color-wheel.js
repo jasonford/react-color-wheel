@@ -5,6 +5,7 @@ export default class ReactColorWheel extends React.Component {
   componentWillMount = () => {
     this.svg = React.createRef();
     this.colorWheel = new JavascriptColorWheel({})
+    this.colorWheel.onChange(()=>this.setState({}))
     window.addEventListener('touchmove', this.preventDefault, {passive: false});
   }
 
@@ -25,9 +26,8 @@ export default class ReactColorWheel extends React.Component {
       let dimensions = this.svg.current.getBoundingClientRect();
       let centerX = dimensions.left + dimensions.width / 2;
       let centerY = dimensions.top + dimensions.height / 2;
-      this.setState({
-        previewAngle: 90 - Math.atan2(x - centerX, y - centerY) * 180 / Math.PI
-      });
+      const previewAngle = Math.round(90 - Math.atan2(x - centerX, y - centerY) * 180 / Math.PI);
+      this.colorWheel.setState({ previewAngle });
       el.preview();
     }
   }
@@ -74,14 +74,14 @@ export default class ReactColorWheel extends React.Component {
                                   current => {
                                     if (current === null) return;
                                     current.preview = () => {
-                                      this.setState({
+                                      this.colorWheel.setState({
                                         previewHue: saturationSegment.hue,
                                         previewSaturation: saturationSegment.saturation,
                                         previewLightness: saturationSegment.lightness
                                       });
                                     }
                                     current.select = () => {
-                                      this.setState({
+                                      this.colorWheel.setState({
                                         previewHue: null,
                                         previewSaturation: null,
                                         previewLigntness: null,
@@ -113,15 +113,13 @@ export default class ReactColorWheel extends React.Component {
                       current => {
                         if (current === null) return;
                         current.preview = () => {
-                          this.setState({
+                          this.colorWheel.setState({
                             previewHue: hue,
                             previewSaturation: 100,
                             previewLightness: 50
                           });
                         }
-                        current.select = () => {
-                          this.selectHue(hue);
-                        }
+                        current.select = () => this.colorWheel.selectHue(hue)
                       }
                     }
                     key={ hue }
@@ -157,15 +155,6 @@ export default class ReactColorWheel extends React.Component {
         }
       </svg>
     );
-  }
-
-  previewHue(hue) {
-    this.setState({ previewHue: hue })
-  }
-
-  selectHue(hue) {
-    this.colorWheel.selectHue(hue);
-    this.setState({a:Math.random()}) // TODO: remove and better tie to javascript color wheel.. okay for now
   }
 
   selectSaturationLightness = (saturation, lightness) => {

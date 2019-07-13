@@ -39,9 +39,16 @@ export default class JavascriptColorWheel {
       numLightnessSegments: lightnessSegments || 9
     };
 
+    this.changeHandlers = [];
+
     this.getState = () => this.state;
-    this.setState = (newState) => this.state = {...this.state, ...newState};
+    this.setState = (newState) => {
+      this.state = {...this.state, ...newState};
+      this.changeHandlers.forEach(handler => handler());
+    }
   }
+
+  onChange = (handler) => this.changeHandlers.push(handler);
 
   selectedColor = () => {
     let {hue, saturation, lightness} = this.getState();
