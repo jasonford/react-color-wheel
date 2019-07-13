@@ -189,7 +189,7 @@ export default class ColorWheel extends React.Component {
           fill={this.selectedColor() || '#FFFFFF'}
         />
         {
-          this.state.previewHue
+          this.state.previewHue !== null
           &&
           <path
             d={this.getSectorPath(0, 0, this.state.innerRadius, -90, 90, 0)}
