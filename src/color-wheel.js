@@ -36,7 +36,7 @@ export default class ColorWheel extends React.Component {
   }
 
   preventDefault = (e) => {
-    if (this.state.dragging) {
+    if (this.svg.current && this.svg.current.contains(e.target) && this.svg.current !== e.target) {
       e.preventDefault();
       e.returnValue = false;
       return false;
@@ -47,8 +47,6 @@ export default class ColorWheel extends React.Component {
     const x = e.touches[0].pageX;
     const y = e.touches[0].pageY;
     const el = document.elementFromPoint(x, y);
-    e.stopPropagation();
-    e.preventDefault();
     if (el && el.preview) {
       this.lastFocusedElement = el;
       let centerX = this.svg.offsetLeft + this.svg.offsetWidth / 2;
@@ -68,7 +66,7 @@ export default class ColorWheel extends React.Component {
       el.select();
     }
     else {
-      this.lastFocusedElement.select();
+      this.lastFocusedElement && this.lastFocusedElement.select();
     }
   }
 
