@@ -6,6 +6,9 @@ export default class ColorWheel extends React.Component {
     hue: this.props.hue,
     saturation: this.props.saturation || 100,
     lightness: this.props.lightness || 50,
+    previewHue: null,
+    previewSaturation: null,
+    previewLightness: null,
     selectedSweep: 180,
     dragging: false,
     innerRadius: 15,
@@ -15,7 +18,8 @@ export default class ColorWheel extends React.Component {
       return {
         hue: 360/numSegs * i,
         angle: 360/numSegs * i,
-        sweep: 360/numSegs
+        sweep: 360/numSegs,
+        ref: React.createRef()
       }
     }),
     numSaturationSegments: this.props.saturationSegments || 9,
@@ -38,12 +42,44 @@ export default class ColorWheel extends React.Component {
     }
   }
 
+  focusElement = e => {
+    const x = e.touches[0].pageX;
+    const y = e.touches[0].pageY;
+    const el = document.elementFromPoint(x, y);
+    if (el && el.preview) {
+      this.lastFocusedElement = el;
+      this.setState({
+        previewAngle: 90 - Math.atan2(x - window.innerWidth/2, y - window.innerHeight/2) * 180 / Math.PI 
+      });
+      el.preview();
+    }
+  }
+
+  selectElement = e => {
+    const x = e.changedTouches[0].pageX;
+    const y = e.changedTouches[0].pageY;
+    const el = document.elementFromPoint(x, y);
+    if (el && el.select) {
+      el.select();
+    }
+    else {
+      this.lastFocusedElement.select();
+    }
+  }
+
   render = () => {
     return (
-      <svg viewBox="-50, -50, 100, 100" width="100%" height="100%">
+      <svg
+        viewBox="-50, -50, 100, 100"
+        width="100%"
+        height="100%"
+        onTouchStart={this.focusElement} // avoids touch event capture on element touched
+        onTouchMove={this.focusElement}
+        onTouchEnd={this.selectElement}
+      >
         {
           this.state.hueSegments.map(
-            ({hue, sweep, angle, selected}) => {
+            ({hue, sweep, angle, selected, ref}) => {
               if (selected) {
                 let slSegments = []
                 let segmentSweep = sweep/this.state.numLightnessSegments;
@@ -54,11 +90,33 @@ export default class ColorWheel extends React.Component {
 
                   for (let l=0; l<this.state.numLightnessSegments; l++) {
                     // ensure saturations of 100 and 0 are available
-                    let saturation = (this.state.numSaturationSegments-1-s)/(this.state.numSaturationSegments-1) * 100;
+                     let saturation = (this.state.numSaturationSegments-1-s)/(this.state.numSaturationSegments-1) * 100;
                     // disallow lightness of 0 or 100 since those are just black and white
                     let lightness = (l+1)/(this.state.numLightnessSegments+1) * 100;
                     slSegments.push(
                       <path
+                        ref={
+                          current => {
+                            if (current === null) return;
+                            current.preview = () => {
+                              this.setState({
+                                previewHue: hue,
+                                previewSaturation: saturation,
+                                previewLightness: lightness
+                              });
+                            }
+                            current.select = () => {
+                              this.setState({
+                                previewHue: null,
+                                previewSaturation: null,
+                                previewLigntness: null,
+                                hue,
+                                saturation,
+                                lightness
+                              });
+                            }
+                          }
+                        }
                         key={`${s},${l}`}
                         d={
                           this.getSectorPath(
@@ -74,8 +132,6 @@ export default class ColorWheel extends React.Component {
                         fill={`hsl(${hue}, ${saturation}%, ${lightness}%)`}
                         stroke={`hsl(${hue}, ${saturation}%, ${lightness}%)`}
                         strokeWidth='0.1'
-                        onClick={ () => this.selectSaturationLightness(saturation, lightness) }
-                        onTouchStart={ () => this.selectSaturationLightness(saturation, lightness) }
                       />
                     )
                   }
@@ -90,6 +146,21 @@ export default class ColorWheel extends React.Component {
               else {
                 return (
                   <path
+                    ref={
+                      current => {
+                        if (current === null) return;
+                        current.preview = () => {
+                          this.setState({
+                            previewHue: hue,
+                            previewSaturation: 100,
+                            previewLightness: 50
+                          });
+                        }
+                        current.select = () => {
+                          this.selectHue(hue);
+                        }
+                      }
+                    }
                     key={ hue }
                     d={
                       this.getSectorPath(
@@ -105,8 +176,6 @@ export default class ColorWheel extends React.Component {
                     fill={`hsl(${hue}, 100%, 50%)`}
                     stroke={`hsl(${hue}, 100%, 50%)`}
                     strokeWidth={0.1}
-                    onClick={ () => this.selectHue(hue) }
-                    onTouchStart={ () => this.selectHue(hue) }
                   />
                 );
               }
@@ -114,13 +183,26 @@ export default class ColorWheel extends React.Component {
           )
         }
         <circle
-          cx="0"
-          cy="0"
+          cx={0}
+          cy={0}
           r={this.state.innerRadius}
-          fill={this.selectedColor() || '#DDDDDD'}
+          fill={this.selectedColor() || '#FFFFFF'}
         />
+        {
+          this.state.previewHue
+          &&
+          <path
+            d={this.getSectorPath(0, 0, this.state.innerRadius, -90, 90, 0)}
+            fill={this.previewColor() || 'none'}
+            transform={`rotate(${this.state.previewAngle})`}
+          />
+        }
       </svg>
     );
+  }
+
+  previewHue(hue) {
+    this.setState({ previewHue: hue })
   }
 
   selectHue(hue) {
@@ -145,6 +227,7 @@ export default class ColorWheel extends React.Component {
     })
     this.setState({
       hueSegments: [...this.state.hueSegments],
+      previewHue: null,
       hue
     });
   }
@@ -154,6 +237,12 @@ export default class ColorWheel extends React.Component {
       saturation,
       lightness
     });
+  }
+
+  previewColor = () => {
+    if (this.state.previewHue !== null) {
+      return `hsl(${this.state.previewHue}, ${this.state.previewSaturation}%, ${this.state.previewLightness}%)`
+    }
   }
 
   selectedColor = () => {
