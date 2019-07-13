@@ -1,13 +1,11 @@
 import React from 'react'; // TODO: take this out!! after we deal with the ref we need for now...
 import { getSectorRadius, getSectorPath } from './utils';
 
-const DEFAULTS = {
-  OUTER_RADIUS: 50,
-  INNER_RADIUS: 15
-}
-
 export default class JavascriptColorWheel {
-  constructor({hue, saturation, lightness, hueSegments, saturationSegments, lightnessSegments}) {
+  constructor({hue, saturation, lightness, hueSegments, saturationSegments, lightnessSegments, innerRadius, outerRadius}) {
+    innerRadius = innerRadius || 50;
+    outerRadius = outerRadius || 15;
+
     this.state = {
       hue: hue,
       saturation: saturation || 100,
@@ -15,11 +13,11 @@ export default class JavascriptColorWheel {
       previewHue: null,
       previewSaturation: null,
       previewLightness: null,
-      previewPath: getSectorPath(DEFAULTS.INNER_RADIUS, -90, 90),
+      previewPath: getSectorPath(innerRadius, -90, 90),
       previewAngle: 0,
       selectedSweep: 180,
-      innerRadius: DEFAULTS.INNER_RADIUS,
-      outerRadius: DEFAULTS.OUTER_RADIUS,
+      innerRadius: innerRadius,
+      outerRadius: outerRadius,
       hueSegments: [...Array(hueSegments || 9)].map((_, i) => {
         const numSegs = hueSegments || 9;
         return {
@@ -28,10 +26,10 @@ export default class JavascriptColorWheel {
           sweep: 360/numSegs,
           ref: React.createRef(),
           pathData: getSectorPath(
-            DEFAULTS.INNER_RADIUS,
+            innerRadius,
             -360/numSegs/2,
             360/numSegs/2,
-            DEFAULTS.OUTER_RADIUS
+            outerRadius
           )
         }
       }),

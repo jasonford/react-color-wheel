@@ -4,7 +4,10 @@ import JavascriptColorWheel from './javascript-color-wheel';
 export default class ReactColorWheel extends React.Component {
   componentWillMount = () => {
     this.svg = React.createRef();
-    this.colorWheel = new JavascriptColorWheel({})
+    this.colorWheel = new JavascriptColorWheel({
+      outerRadius: this.getOuterRadius(),
+      innerRadius: this.getInnerRadius()
+    });
     this.colorWheel.onChange(()=>this.setState({}))
     window.addEventListener('touchmove', this.preventDefault, {passive: false});
   }
@@ -15,6 +18,14 @@ export default class ReactColorWheel extends React.Component {
       e.returnValue = false;
       return false;
     }
+  }
+
+  getInnerRadius() {
+    return this.props.innerRadius || 150
+  }
+
+  getOuterRadius() {
+    return this.props.outerRadius || 500
   }
 
   focusElement = e => {
@@ -46,13 +57,14 @@ export default class ReactColorWheel extends React.Component {
   }
 
   render = () => {
+    const r = this.getOuterRadius();
     return (
       <svg
         ref={this.svg}
         style={{touchAction: 'none'}}
-        viewBox="-50, -50, 100, 100"
-        width="100%"
-        height="100%"
+        viewBox={`${-r}, ${-r}, ${2*r}, ${2*r}`}
+        width={2*r}
+        height={2*r}
         onTouchStart={this.focusElement} // avoids touch event capture on element touched
         onTouchMove={this.focusElement}
         onTouchEnd={this.selectElement}
