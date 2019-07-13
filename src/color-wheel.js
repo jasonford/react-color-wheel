@@ -13,8 +13,8 @@ export default class ColorWheel extends React.Component {
     dragging: false,
     innerRadius: 15,
     outerRadius: 50,
-    hueSegments: [...Array(this.props.hueSegments || 18)].map((_, i) => {
-      const numSegs = this.props.hueSegments || 18;
+    hueSegments: [...Array(this.props.hueSegments || 17)].map((_, i) => {
+      const numSegs = this.props.hueSegments || 17;
       return {
         hue: 360/numSegs * i,
         angle: 360/numSegs * i,
@@ -127,8 +127,6 @@ export default class ColorWheel extends React.Component {
                         key={`${s},${l}`}
                         d={
                           this.getSectorPath(
-                            0,
-                            0,
                             segmentOuterArcRadius,
                             -sweep/2 + segmentSweep * l,
                             -sweep/2 + segmentSweep * (l+1),
@@ -171,8 +169,6 @@ export default class ColorWheel extends React.Component {
                     key={ hue }
                     d={
                       this.getSectorPath(
-                        0,
-                        0,
                         this.state.outerRadius,
                         -sweep/2,
                         sweep/2,
@@ -199,7 +195,7 @@ export default class ColorWheel extends React.Component {
           this.state.previewHue !== null
           &&
           <path
-            d={this.getSectorPath(0, 0, this.state.innerRadius, -90, 90, 0)}
+            d={this.getSectorPath(this.state.innerRadius, -90, 90)}
             fill={this.previewColor() || 'none'}
             transform={`rotate(${this.state.previewAngle})`}
           />
@@ -264,7 +260,7 @@ export default class ColorWheel extends React.Component {
     return
   }
 
-  getSectorPath(x, y, outerRadius, a1, a2, innerRadius = 0) {
+  getSectorPath(outerRadius, a1, a2, innerRadius = 0, x = 0, y = 0) {
     const degtorad = Math.PI / 180;
     const x1 = (Math.cos(degtorad * a2) * innerRadius) + x;
     const y1 = (-Math.sin(degtorad * a2) * innerRadius) + y;
