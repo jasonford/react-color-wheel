@@ -59,6 +59,9 @@ export default class JavascriptColorWheel {
     this.setState = (newState) => {
       this.state = {...this.state, ...newState};
       this.changeHandlers.forEach(handler => handler());
+      if (this.canvas) {
+        console.log('render!')
+      }
     }
   }
 
@@ -269,6 +272,7 @@ export default class JavascriptColorWheel {
 
   //  touch event handlers
   focus = e => {
+    console.log('touch bound...')
     const x = e.touches ? e.touches[0].clientX : e.clientX;
     const y = e.touches ? e.touches[0].clientY : e.clientY;
     const dimensions = e.currentTarget.getBoundingClientRect();
@@ -282,4 +286,22 @@ export default class JavascriptColorWheel {
     const dimensions = e.currentTarget.getBoundingClientRect();
     this.selectColorAtCoord(x - dimensions.left, y - dimensions.top);
   }
+
+  insertCanvas = (el) => {
+    // initialize canvas and insert in DOM
+    const c = document.createElement('canvas');
+    //c.style.touchAction = 'none';
+    c.width = 2*this.state.outerRadius;
+    c.height = 2*this.state.outerRadius;
+    c.addEventListener('mousemove', this.focus);
+    c.addEventListener('mouseup', this.select);
+    c.addEventListener('touchstart', this.focus);
+    c.addEventListener('touchmove', this.focus);
+    c.addEventListener('touchend', this.select);
+    el.appendChild(c);
+    this.canvas = c;
+    this.setState({});
+  }
+
+  exit = () => {}
 }

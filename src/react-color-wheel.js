@@ -11,9 +11,17 @@ export default class ReactColorWheel extends React.Component {
       outerRadius: this.getOuterRadius(),
       innerRadius: this.getInnerRadius()
     });
-    this.colorWheel.onChange(()=>this.setState({}));
+    this.colorWheel.onChange(()=>this.setState({})); // force a render pass
     this.colorWheel.onSelect((color)=>this.props.onChange && this.props.onChange(color));
     window.addEventListener('touchmove', this.disableTouchScroll, {passive: false});
+  }
+
+  componentDidMount = () => {
+    this.canvasContainer && this.colorWheel.insertCanvas(this.canvasContainer);
+  }
+
+  componentWillUnmount = () => {
+    this.colorWheel.exit();
   }
 
   disableTouchScroll = (e) => {
@@ -29,8 +37,11 @@ export default class ReactColorWheel extends React.Component {
   getInnerRadius = () => this.props.innerRadius || this.getOuterRadius() / Math.PI;
   getOuterRadius = () => this.props.radius || 500;
 
+  renderCanvas = () => {
+    return <div ref={el => this.canvasContainer = el } />;
+  }
+
   renderSvg = () => {
-    const r = this.getOuterRadius();
     return (
       <svg
         ref={this.container}
@@ -56,6 +67,6 @@ export default class ReactColorWheel extends React.Component {
   }
 
   render = () => {
-    return this.renderSvg();
+    return this.renderCanvas();
   }
 }
