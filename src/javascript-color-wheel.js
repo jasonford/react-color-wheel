@@ -61,7 +61,7 @@ export default class JavascriptColorWheel {
       numLightnessSegments: lightnessSegments || 9
     };
 
-    this.changeHandlers = [];
+    this.previewHandlers = [];
     this.selectHandlers = [];
 
     this.canvasUpdates = 0;
@@ -116,6 +116,7 @@ export default class JavascriptColorWheel {
       }
       if (this.pendingUpdates.all || this.pendingUpdates.hue || this.pendingUpdates.preview) {
         ctx.fillStyle = this.selectedColor();
+        ctx.strokeStyle = this.selectedColor();
         ctx.fill(
           ctx.arc(
             this.state.outerRadius,
@@ -127,8 +128,11 @@ export default class JavascriptColorWheel {
         );
       }
       if (this.pendingUpdates.all || this.pendingUpdates.preview) {
-        ctx.fillStyle = this.previewColor();
-        this.state.previewHue !== null && ctx.fill(new Path2D(this.state.previewPath));
+        if (this.state.previewHue !== null) {
+          ctx.fillStyle = this.previewColor();
+          ctx.fill(new Path2D(this.state.previewPath));
+          ctx.strokeStyle = this.previewColor();
+        }
       }
       this.pendingUpdates = {};
       this.renderedFrames += 1;
@@ -158,7 +162,7 @@ export default class JavascriptColorWheel {
 
   getSegmentColor = ({hue, saturation, lightness}) => `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 
-  onChange = (handler) => this.changeHandlers.push(handler);
+  onPreview = (handler) => this.previewHandlers.push(handler);
   onSelect = (handler) => this.selectHandlers.push(handler);
 
   selectedColor = () => {
@@ -211,6 +215,7 @@ export default class JavascriptColorWheel {
       newState.previewLightness = segment.lightness;
     }
     this.setState(newState);
+    this.previewHandlers.forEach( handler => handler({hsl: this.previewColor()}));
   }
 
   selectColorAtCoord = (x, y) => {
@@ -336,7 +341,7 @@ export default class JavascriptColorWheel {
         hue
       });
     }
-    this.changeHandlers.forEach( handler => handler({hsl: this.selectedColor()}));
+    this.previewHandlers.forEach( handler => handler({hsl: this.selectedColor()}));
   }
 
   svgUtils = {
