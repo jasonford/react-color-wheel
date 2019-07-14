@@ -39,6 +39,8 @@ export default class JavascriptColorWheel {
         const numSegs = hueSegments || 9;
         const angle = 360/numSegs * i;
         return {
+          innerRadius: innerRadius,
+          outerRadius: outerRadius,
           lightnessSaturationSectors: [],
           hue: angle,
           saturation: 100,
@@ -69,7 +71,6 @@ export default class JavascriptColorWheel {
     this.setState = (newState) => {
       const oldState = this.state;
       this.state = {...oldState, ...newState};
-      this.changeHandlers.forEach(handler => handler());
       if (this.canvas) {
         this.updateCanvas({
           all: this.canvasUpdates === 0,
@@ -101,7 +102,9 @@ export default class JavascriptColorWheel {
     //  TODO: if frame gets dropped, want to batch the shouldUpdates
     cancelAnimationFrame(this.animationFrame);
     this.animationFrame = requestAnimationFrame(() => {
-      const ctx = this.ctx;
+      const ctx = this.canvas.getContext('2d', { alpha: false });
+      // Scale all drawing operations by the dpr, so you
+      // don't have to worry about the difference.
       if (this.pendingUpdates.all || this.pendingUpdates.hue) {
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.getSegments().forEach( segment => {
@@ -212,9 +215,8 @@ export default class JavascriptColorWheel {
 
   selectColorAtCoord = (x, y) => {
     const r = Math.sqrt(Math.pow(x-this.state.outerRadius, 2) + Math.pow(y-this.state.outerRadius, 2))
-    if (r < this.state.innerRadius && isNaN(this.state.previewHue)) {
-      // final selection
-      console.log('final hsl selection' ,this.state.hue, this.state.saturation, this.state.lightness);
+    if (r < this.state.innerRadius && this.state.previewHue === null) {
+      this.selectHandlers.forEach( handler => handler({hsl: this.selectedColor()}));
     }
     else {
       const segment = this.getSegmentAtCoord(x, y);
@@ -326,13 +328,15 @@ export default class JavascriptColorWheel {
       });
       this.setState({
         hueSectors: [...this.state.hueSectors],
-        previewHue: null,
         saturation: 100,
         lightness: 50,
+        previewHue: null,
+        previewSaturation: null,
+        previewLigntness: null,
         hue
       });
     }
-    this.selectHandlers.forEach( handler => handler(this.selectedColor()));
+    this.changeHandlers.forEach( handler => handler({hsl: this.selectedColor()}));
   }
 
   svgUtils = {
@@ -411,12 +415,12 @@ export default class JavascriptColorWheel {
     c.addEventListener('touchmove', this.focus);
     c.addEventListener('touchend', this.select);
 
-    this.ctx = c.getContext('2d');
-    // Scale all drawing operations by the dpr, so you
-    // don't have to worry about the difference.
-    this.ctx.scale(dpr, dpr);
-
     this.canvas = c;
+
+    c.getContext('2d').scale(
+      window.devicePixelRatio || 1,
+      window.devicePixelRatio || 1
+    );
 
     // first render
     this.updateCanvas({all:true});

@@ -11,8 +11,13 @@ export default class ReactColorWheel extends React.Component {
       outerRadius: this.getOuterRadius(),
       innerRadius: this.getInnerRadius()
     });
-    this.colorWheel.onChange(()=>this.setState({})); // force a render pass
-    this.colorWheel.onSelect((color)=>this.props.onChange && this.props.onChange(color));
+    this.colorWheel.onChange((color)=>{
+      this.setState({});
+      this.props.onChange && this.props.onChange(color);
+    }); // force a render pass
+    this.colorWheel.onSelect((color)=>{
+      this.props.onSelect && this.props.onSelect(color);
+    });
   }
 
   componentDidMount = () => {
