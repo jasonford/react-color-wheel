@@ -2,6 +2,19 @@ import { getSectorRadius, getSectorPath } from './utils';
 
 const flat = (array) => [].concat.apply([], array);
 
+
+//  copy and paste from https://www.xarg.org/2010/06/is-an-angle-between-two-other-angles/
+//  looks hacky.. should probably use something better.
+function angle_between(n, a, b) {
+  n = (360 + (n % 360)) % 360;
+  a = (3600000 + a) % 360;
+  b = (3600000 + b) % 360;
+
+  if (a < b)
+    return a <= n && n <= b;
+  return a <= n || n <= b;
+}
+
 export default class JavascriptColorWheel {
   constructor({hue, saturation, lightness, hueSegments, saturationSegments, lightnessSegments, innerRadius, outerRadius}) {
     innerRadius = innerRadius || 50;
@@ -19,7 +32,7 @@ export default class JavascriptColorWheel {
       selectedSweep: 180,
       innerRadius: innerRadius,
       outerRadius: outerRadius,
-      hueSegments: [...Array(hueSegments || 9)].map((_, i) => {
+      hueSectors: [...Array(hueSegments || 9)].map((_, i) => {
         const numSegs = hueSegments || 9;
         return {
           lightnessSaturationSectors: [],
@@ -43,7 +56,6 @@ export default class JavascriptColorWheel {
     this.changeHandlers = [];
     this.selectHandlers = [];
 
-    this.getState = () => this.state;
     this.setState = (newState) => {
       this.state = {...this.state, ...newState};
       this.changeHandlers.forEach(handler => handler());
@@ -51,15 +63,15 @@ export default class JavascriptColorWheel {
   }
 
   getSegments = () => {
-    const hueSegments = this.state.hueSegments;
+    const hueSectors = this.state.hueSectors;
     let ret = (
       //  ignore the selected one since lightness and saturation variations will cover it
-      hueSegments.filter( s => !s.selected ).concat(
+      hueSectors.filter( s => !s.selected ).concat(
         flat(
-          hueSegments.map(
-            hueSegment => (
+          hueSectors.map(
+            hueSector => (
               flat(
-                hueSegment
+                hueSector
                   .lightnessSaturationSectors
                   .map(sector => sector.saturationSegments)
               )
@@ -75,17 +87,48 @@ export default class JavascriptColorWheel {
   onSelect = (handler) => this.selectHandlers.push(handler);
 
   selectedColor = () => {
-    let {hue, saturation, lightness} = this.getState();
+    let {hue, saturation, lightness} = this.state;
     if (hue !== undefined) {
       return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     }
   }
 
   previewColor = () => {
-    let {previewHue, previewSaturation, previewLightness} = this.getState();
+    let {previewHue, previewSaturation, previewLightness} = this.state;
     if (previewHue !== null) {
       return `hsl(${previewHue}, ${previewSaturation}%, ${previewLightness}%)`;
     }
+  }
+
+  getSegmentAtCoord = (x, y) => {
+    const angle = Math.round(90 - Math.atan2(x - this.state.outerRadius, y - this.state.outerRadius) * 180 / Math.PI);
+    const r = Math.sqrt(Math.pow(x-this.state.outerRadius, 2) + Math.pow(y-this.state.outerRadius, 2))
+    let sector = this.getSegments().find(
+      s => {
+        return (
+          angle_between(s.angle + s.sweep/2, angle, s.angle - s.sweep/2)
+          && (!s.innerRadius || s.innerRadius <= r)
+          && (!s.outerRadius || s.outerRadius >= r)
+        )
+      }
+    );
+    return sector;
+  }
+
+  previewColorAtCoord = (x, y) => {
+    this.state.previewAngle = Math.round(90 - Math.atan2(x - this.state.outerRadius, y - this.state.outerRadius) * 180 / Math.PI);
+    const segment = this.getSegmentAtCoord(x, y);
+    if (segment) {
+      this.state.previewHue = segment.hue;
+      this.state.previewSaturation = segment.saturation;
+      this.state.previewLightness = segment.lightness;
+    }
+    this.setState({});
+  }
+
+  selectColorAtCoord = (x, y) => {
+    const segment = this.getSegmentAtCoord(x, y);
+    segment && this.selectColor(segment.hue, segment.saturation, segment.lightness);
   }
 
   selectColor = (hue, saturation, lightness) => {
@@ -103,7 +146,7 @@ export default class JavascriptColorWheel {
     else {
       //  this function handles all dimension calculations
       //  for the layout of necessary sectors
-      this.state.hueSegments.forEach((segment, index) => {
+      this.state.hueSectors.forEach((segment, index) => {
         const selected = segment.hue === hue;
         segment.selected = selected;
         if (selected) {
@@ -119,16 +162,19 @@ export default class JavascriptColorWheel {
           segment.lightnessSaturationSectors = [];
           for (let l=0; l<this.state.numLightnessSegments; l++) {
             const lightness = (l+1)/(this.state.numLightnessSegments+1) * 100;
+            const sweep = selectedSweep/this.state.numLightnessSegments;
+            const angle = segment.angle - selectedSweep/2 + sweep*l +sweep/2;
             const lightnessSaturationSector = {
               hue: segment.hue,
-              angle: segment.angle,
+              angle,
+              sweep,
               saturationSegments: []
             }
             segment.lightnessSaturationSectors.push(lightnessSaturationSector);
             for (let s=0; s<this.state.numSaturationSegments; s++) {
               // set segment inner and outer arcs (now inside saturation for-loop, changes for each saturation "row")
-              const segmentOuterArcRadius = getSectorRadius((s+1)/this.state.numSaturationSegments,this.state.innerRadius, this.state.outerRadius)
-              const segmentInnerArcRadius = getSectorRadius(s/this.state.numSaturationSegments, this.state.innerRadius, this.state.outerRadius)
+              const outerRadius = getSectorRadius((s+1)/this.state.numSaturationSegments,this.state.innerRadius, this.state.outerRadius)
+              const innerRadius = getSectorRadius(s/this.state.numSaturationSegments, this.state.innerRadius, this.state.outerRadius)
 
               const saturation = (this.state.numSaturationSegments-1-s)/(this.state.numSaturationSegments-1) * 100;
               // ensure saturations of 100 and 0 are available
@@ -136,12 +182,15 @@ export default class JavascriptColorWheel {
               lightnessSaturationSector.saturationSegments.push(
                 {
                   angle: lightnessSaturationSector.angle,
+                  sweep: lightnessSaturationSector.sweep,
                   pathData: getSectorPath(
-                    segmentOuterArcRadius,
-                    -selectedSweep/2 + selectedSweep/this.state.numLightnessSegments*l,
-                    -selectedSweep/2 + selectedSweep/this.state.numLightnessSegments*(l+1),
-                    segmentInnerArcRadius
+                    outerRadius,
+                    -lightnessSaturationSector.sweep/2,
+                    lightnessSaturationSector.sweep/2,
+                    innerRadius
                   ),
+                  innerRadius,
+                  outerRadius,
                   hue,
                   saturation,
                   lightness
@@ -152,8 +201,8 @@ export default class JavascriptColorWheel {
 
           // get other segments in their order after our selected segment
           const otherSegments = [
-            ...this.state.hueSegments.slice(index+1),
-            ...this.state.hueSegments.slice(0, index)
+            ...this.state.hueSectors.slice(index+1),
+            ...this.state.hueSectors.slice(0, index)
           ];
           let otherSegmentSweep = (360 - this.state.selectedSweep) / otherSegments.length;
           let nextAngle = segment.angle + this.state.selectedSweep/2 + otherSegmentSweep/2;
@@ -172,7 +221,7 @@ export default class JavascriptColorWheel {
         }
       });
       this.setState({
-        hueSegments: [...this.state.hueSegments],
+        hueSectors: [...this.state.hueSectors],
         previewHue: null,
         saturation: 100,
         lightness: 50,
@@ -204,6 +253,33 @@ export default class JavascriptColorWheel {
       fill: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
       stroke: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
       strokeWidth: this.state.outerRadius/50
+    }),
+    svgProps: () => ({
+        style: {touchAction: 'none'},
+        viewBox: `${-this.state.outerRadius}, ${-this.state.outerRadius}, ${2*this.state.outerRadius}, ${2*this.state.outerRadius}`,
+        width: 2*this.state.outerRadius,
+        height: 2*this.state.outerRadius,
+        onMouseMove: this.focus,
+        onMouseUp: this.select,
+        onTouchStart: this.focus,
+        onTouchMove: this.focus,
+        onTouchEnd: this.select
     })
+  }
+
+  //  touch event handlers
+  focus = e => {
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    const dimensions = e.currentTarget.getBoundingClientRect();
+    this.previewColorAtCoord(x - dimensions.left, y - dimensions.top);
+  }
+
+  select = e => {
+    if (e.changedTouches && e.changedTouches.length === 0) return;
+    const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    const y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+    const dimensions = e.currentTarget.getBoundingClientRect();
+    this.selectColorAtCoord(x - dimensions.left, y - dimensions.top);
   }
 }
