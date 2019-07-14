@@ -6,8 +6,8 @@ export default class ReactColorWheel extends React.Component {
     this.container = React.createRef();
     this.colorWheel = new JavascriptColorWheel({
       hueSegments: this.props.hueSegments || 12,
-      lightnessSegments: this.props.lightnessSegments || 12,
-      saturationSegments: this.props.saturationSegments || 12,
+      lightnessSegments: this.props.lightnessSegments || 11,
+      saturationSegments: this.props.saturationSegments || 11,
       outerRadius: this.getOuterRadius(),
       innerRadius: this.getInnerRadius()
     });
