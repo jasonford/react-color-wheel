@@ -206,8 +206,8 @@ export default class JavascriptColorWheel {
     newState.previewAngle = Math.round(90 - Math.atan2(x - this.state.outerRadius, y - this.state.outerRadius) * 180 / Math.PI);
     newState.previewPath = getSectorPath(
       0,
-      -90 - this.state.previewAngle,
-      90 - this.state.previewAngle,
+      -90 - newState.previewAngle,
+      90 - newState.previewAngle,
       this.state.innerRadius,
       this.state.outerRadius,
       this.state.outerRadius
@@ -389,9 +389,13 @@ export default class JavascriptColorWheel {
   //  touch event handlers
   focus = e => {
     let coord;
-    if (e.touches) coord = e.touches[0];
-    if (e.changedTouches) coord = e.changedTouches[0];
-    if (!coord) {
+    if (e.touches) {
+      coord = e.touches[0];
+    }
+    else if (e.changedTouches) {
+      coord = e.changedTouches[0];
+    }
+    else {
       if (!this.mouseIsDown) return;
       coord = e;
     }
@@ -419,9 +423,9 @@ export default class JavascriptColorWheel {
     c.style.width = this.state.outerRadius * 2 + 'px';
     c.style.height = this.state.outerRadius * 2 + 'px';
 
-    c.addEventListener('mousedown', (e) => {this.focus(e); this.mouseIsDown = true})
+    c.addEventListener('mousedown', (e) => { this.mouseIsDown = true; this.focus(e); })
     c.addEventListener('mousemove', this.focus);
-    c.addEventListener('mouseup', (e) => {this.select(e); this.mouseIsDown = false});
+    c.addEventListener('mouseup', (e) => { this.mouseIsDown = false; this.select(e); });
     c.addEventListener('touchstart', this.focus);
     c.addEventListener('touchmove', this.focus);
     c.addEventListener('touchend', this.select);
