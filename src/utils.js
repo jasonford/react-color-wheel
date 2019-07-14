@@ -4,7 +4,7 @@ export function getSectorRadius (percentage, innerDiscRadius, outerDiscRadius) {
   return Math.sqrt(percentage*outerDiscRadius*outerDiscRadius + (1-percentage)*innerDiscRadius*innerDiscRadius)
 }
 
-export function getSectorPath(outerRadius, a1, a2, innerRadius = 0, x = 0, y = 0) {
+export function getSectorPath(outerRadius, a1, a2, innerRadius = 0, x = 0, y = 0, linearApproximation = false) {
   const degtorad = Math.PI / 180;
   const x1 = (Math.cos(degtorad * a2) * innerRadius) + x;
   const y1 = (-Math.sin(degtorad * a2) * innerRadius) + y;
@@ -14,6 +14,17 @@ export function getSectorPath(outerRadius, a1, a2, innerRadius = 0, x = 0, y = 0
   const y3 = (-Math.sin(degtorad * a1) * outerRadius) + y;
   const x4 = (Math.cos(degtorad * a2) * outerRadius) + x;
   const y4 = (-Math.sin(degtorad * a2) * outerRadius) + y;
+
+  if (linearApproximation) {
+    return `
+      M ${Math.round(x1)} ${Math.round(y1)}
+      L ${Math.round(x2)} ${Math.round(y2)}
+      L ${Math.round(x3)} ${Math.round(y3)}
+      L ${Math.round(x4)} ${Math.round(y4)}
+      Z
+    `;
+  }
+
   return `
     M ${x1} ${y1}
     A ${innerRadius} ${innerRadius} 0 0 1 ${x2} ${y2}

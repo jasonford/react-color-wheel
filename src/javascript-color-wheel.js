@@ -185,6 +185,7 @@ export default class JavascriptColorWheel {
   selectColorAtCoord = (x, y) => {
     const segment = this.getSegmentAtCoord(x, y);
     segment && this.selectColor(segment.hue, segment.saturation, segment.lightness);
+    this.setState({});
   }
 
   selectColor = (hue, saturation, lightness) => {
@@ -213,7 +214,8 @@ export default class JavascriptColorWheel {
             -segment.angle+selectedSweep/2,
             this.state.innerRadius,
             this.state.outerRadius,
-            this.state.outerRadius
+            this.state.outerRadius,
+            true
           )
 
           //  create saturation and lightness segments and insert into sectors
@@ -242,9 +244,9 @@ export default class JavascriptColorWheel {
                   angle: lightnessSaturationSector.angle,
                   sweep: lightnessSaturationSector.sweep,
                   pathData: getSectorPath(
-                    outerRadius,
-                    -lightnessSaturationSector.angle - lightnessSaturationSector.sweep/2,
-                    -lightnessSaturationSector.angle + lightnessSaturationSector.sweep/2,
+                    outerRadius + 1, // adjust to cover gaps where stroke should be
+                    -lightnessSaturationSector.angle - lightnessSaturationSector.sweep/2 - 1,
+                    -lightnessSaturationSector.angle + lightnessSaturationSector.sweep/2 + 1,
                     innerRadius,
                     this.state.outerRadius,
                     this.state.outerRadius
