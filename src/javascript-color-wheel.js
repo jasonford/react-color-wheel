@@ -98,7 +98,11 @@ export default class JavascriptColorWheel {
 
   updateCanvas(shouldUpdate) {
     this.canvasUpdates += 1;
-    this.pendingUpdates = {...this.pendingUpdates, ...shouldUpdate};
+    this.pendingUpdates = { ...this.pendingUpdates };
+    Object.keys(shouldUpdate).forEach( key => {
+      // Don't overwrite old pendingUpdate[key] = true
+      if (!this.pendingUpdates[key]) this.pendingUpdates[key] = shouldUpdate[key];
+    })
     //  TODO: if frame gets dropped, want to batch the shouldUpdates
     cancelAnimationFrame(this.animationFrame);
     this.animationFrame = requestAnimationFrame(() => {
@@ -226,7 +230,9 @@ export default class JavascriptColorWheel {
     else {
       const segment = this.getSegmentAtCoord(x, y);
       if (segment) this.selectColor(segment.hue, segment.saturation, segment.lightness);
-      else if (!isNaN(this.state.previewHue)) this.selectColor(this.state.previewHue, this.state.previewSaturation, this.state.previewLightness);
+      else if (this.state.previewHue !== null) {
+        this.selectColor(this.state.previewHue, this.state.previewSaturation, this.state.previewLightness);
+      }
     }
   }
 
