@@ -259,7 +259,7 @@ export default class JavascriptColorWheel {
           //  create saturation and lightness segments and insert into sectors
           segment.lightnessSaturationSectors = [];
           for (let l=0; l<this.state.numLightnessSegments; l++) {
-            const lightness = (l+1)/(this.state.numLightnessSegments+1) * 100;
+            const lightness = l/(this.state.numLightnessSegments-1) * 100;
             const sweep = selectedSweep/this.state.numLightnessSegments;
             const angle = segment.angle - selectedSweep/2 + sweep*l +sweep/2;
             const lightnessSaturationSector = {
@@ -275,8 +275,6 @@ export default class JavascriptColorWheel {
               const innerRadius = getSectorRadius(s/this.state.numSaturationSegments, this.state.innerRadius, this.state.outerRadius)
 
               const saturation = (this.state.numSaturationSegments-1-s)/(this.state.numSaturationSegments-1) * 100;
-              // ensure saturations of 100 and 0 are available
-              // disallow lightness of 0 or 100 since those are just black and white
               lightnessSaturationSector.saturationSegments.push(
                 {
                   angle: lightnessSaturationSector.angle,
