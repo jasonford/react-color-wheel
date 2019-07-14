@@ -13,7 +13,6 @@ export default class ReactColorWheel extends React.Component {
     });
     this.colorWheel.onChange(()=>this.setState({})); // force a render pass
     this.colorWheel.onSelect((color)=>this.props.onChange && this.props.onChange(color));
-    window.addEventListener('touchmove', this.disableTouchScroll, {passive: false});
   }
 
   componentDidMount = () => {
@@ -22,16 +21,6 @@ export default class ReactColorWheel extends React.Component {
 
   componentWillUnmount = () => {
     this.colorWheel.exit();
-  }
-
-  disableTouchScroll = (e) => {
-    if ( this.container.current
-    &&   this.container.current.contains(e.target)
-    &&   this.container.current !== e.target) {
-      e.preventDefault();
-      e.returnValue = false;
-      return false;
-    }
   }
 
   getInnerRadius = () => this.props.innerRadius || this.getOuterRadius() / Math.PI;

@@ -2,7 +2,6 @@ import { getSectorRadius, getSectorPath } from './utils';
 
 const flat = (array) => [].concat.apply([], array);
 
-
 //  copy and paste from https://www.xarg.org/2010/06/is-an-angle-between-two-other-angles/
 //  looks hacky.. should probably use something better.
 function angle_between(n, a, b) {
@@ -21,9 +20,9 @@ export default class JavascriptColorWheel {
     outerRadius = outerRadius || 15;
 
     this.state = {
-      hue: hue,
+      hue: hue || 0,
       saturation: saturation || 100,
-      lightness: lightness || 50,
+      lightness: lightness || 100,
       previewHue: null,
       previewSaturation: null,
       previewLightness: null,
@@ -34,17 +33,20 @@ export default class JavascriptColorWheel {
       outerRadius: outerRadius,
       hueSectors: [...Array(hueSegments || 9)].map((_, i) => {
         const numSegs = hueSegments || 9;
+        const angle = 360/numSegs * i;
         return {
           lightnessSaturationSectors: [],
-          hue: 360/numSegs * i,
+          hue: angle,
           saturation: 100,
           lightness: 50,
-          angle: 360/numSegs * i,
+          angle,
           sweep: 360/numSegs,
           pathData: getSectorPath(
             innerRadius,
-            -360/numSegs/2,
-            360/numSegs/2,
+            -angle-360/numSegs/2,
+            -angle+360/numSegs/2,
+            outerRadius,
+            outerRadius,
             outerRadius
           )
         }
@@ -60,9 +62,50 @@ export default class JavascriptColorWheel {
       this.state = {...this.state, ...newState};
       this.changeHandlers.forEach(handler => handler());
       if (this.canvas) {
-        console.log('render!')
+        this.updateCanvas();
       }
     }
+
+    window.addEventListener('touchmove', this.disableTouchScroll, {passive: false});
+  }
+
+  disableTouchScroll = (e) => {
+    if ( this.canvas ) {
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      const y = e.touches ? e.touches[0].clientY : e.clientY;
+      const d = this.canvas.getBoundingClientRect();
+      if (this.state.outerRadius > Math.sqrt(Math.pow(x-(d.left+d.width/2),2)+Math.pow(y-(d.top+d.height/2),2))) {
+        e.preventDefault();
+        e.returnValue = false;
+        return false;
+      }
+    }
+  }
+
+  updateCanvas() {
+    cancelAnimationFrame(this.animationFrame);
+    this.animationFrame = requestAnimationFrame(() => {
+      const ctx = this.ctx;
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.getSegments().forEach( segment => {
+        const path = new Path2D();
+        ctx.fillStyle = this.getSegmentColor(segment);
+        path.addPath(new Path2D(segment.pathData));
+        ctx.fill(path);
+      });
+      ctx.fillStyle = this.getSegmentColor(this.state);
+      ctx.fill(
+        ctx.arc(
+          this.state.outerRadius,
+          this.state.outerRadius,
+          this.state.innerRadius,
+          0,
+          2 * Math.PI
+        )
+      );
+      ctx.fillStyle = this.previewColor();
+      this.state.previewHue !== null && ctx.fill(new Path2D(this.state.previewPath));
+    });
   }
 
   getSegments = () => {
@@ -85,6 +128,8 @@ export default class JavascriptColorWheel {
     );
     return ret;
   }
+
+  getSegmentColor = ({hue, saturation, lightness}) => `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 
   onChange = (handler) => this.changeHandlers.push(handler);
   onSelect = (handler) => this.selectHandlers.push(handler);
@@ -120,6 +165,14 @@ export default class JavascriptColorWheel {
 
   previewColorAtCoord = (x, y) => {
     this.state.previewAngle = Math.round(90 - Math.atan2(x - this.state.outerRadius, y - this.state.outerRadius) * 180 / Math.PI);
+    this.state.previewPath = getSectorPath(
+      0,
+      -90 - this.state.previewAngle,
+      90 - this.state.previewAngle,
+      this.state.innerRadius,
+      this.state.outerRadius,
+      this.state.outerRadius
+    )
     const segment = this.getSegmentAtCoord(x, y);
     if (segment) {
       this.state.previewHue = segment.hue;
@@ -156,9 +209,11 @@ export default class JavascriptColorWheel {
           let selectedSweep = this.state.selectedSweep;
           segment.pathData = getSectorPath(
             this.state.outerRadius,
-            -selectedSweep/2,
-            selectedSweep/2,
-            this.state.innerRadius
+            -segment.angle-selectedSweep/2,
+            -segment.angle+selectedSweep/2,
+            this.state.innerRadius,
+            this.state.outerRadius,
+            this.state.outerRadius
           )
 
           //  create saturation and lightness segments and insert into sectors
@@ -188,9 +243,11 @@ export default class JavascriptColorWheel {
                   sweep: lightnessSaturationSector.sweep,
                   pathData: getSectorPath(
                     outerRadius,
-                    -lightnessSaturationSector.sweep/2,
-                    lightnessSaturationSector.sweep/2,
-                    innerRadius
+                    -lightnessSaturationSector.angle - lightnessSaturationSector.sweep/2,
+                    -lightnessSaturationSector.angle + lightnessSaturationSector.sweep/2,
+                    innerRadius,
+                    this.state.outerRadius,
+                    this.state.outerRadius
                   ),
                   innerRadius,
                   outerRadius,
@@ -215,9 +272,11 @@ export default class JavascriptColorWheel {
             otherSegment.angle = nextAngle%360;
             otherSegment.pathData = getSectorPath(
               this.state.outerRadius,
-              -otherSegmentSweep/2,
-              otherSegmentSweep/2,
-              this.state.innerRadius
+              -otherSegment.angle - otherSegmentSweep/2,
+              -otherSegment.angle + otherSegmentSweep/2,
+              this.state.innerRadius,
+              this.state.outerRadius,
+              this.state.outerRadius
             )
             nextAngle += otherSegmentSweep;
           })
@@ -272,7 +331,6 @@ export default class JavascriptColorWheel {
 
   //  touch event handlers
   focus = e => {
-    console.log('touch bound...')
     const x = e.touches ? e.touches[0].clientX : e.clientX;
     const y = e.touches ? e.touches[0].clientY : e.clientY;
     const dimensions = e.currentTarget.getBoundingClientRect();
@@ -288,11 +346,15 @@ export default class JavascriptColorWheel {
   }
 
   insertCanvas = (el) => {
+    // Get the device pixel ratio, falling back to 1.
+    var dpr = window.devicePixelRatio || 1;
     // initialize canvas and insert in DOM
     const c = document.createElement('canvas');
-    //c.style.touchAction = 'none';
-    c.width = 2*this.state.outerRadius;
-    c.height = 2*this.state.outerRadius;
+    c.width = 2*this.state.outerRadius * dpr;
+    c.height = 2*this.state.outerRadius * dpr;
+    c.style.transformOrigin = '0 0';
+    c.style.transform = `scale(${1/dpr})`;
+
     c.addEventListener('mousemove', this.focus);
     c.addEventListener('mouseup', this.select);
     c.addEventListener('touchstart', this.focus);
@@ -300,6 +362,13 @@ export default class JavascriptColorWheel {
     c.addEventListener('touchend', this.select);
     el.appendChild(c);
     this.canvas = c;
+
+    this.ctx = c.getContext('2d');
+    // Scale all drawing operations by the dpr, so you
+    // don't have to worry about the difference.
+    this.ctx.scale(dpr, dpr);
+
+
     this.setState({});
   }
 

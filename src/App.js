@@ -8,6 +8,9 @@ function App() {
       <ReactColorWheel
         radius={Math.min(window.innerHeight/2, window.innerWidth/2)}
         onChange={ (color)=>document.body.style.background = color }
+        hueSegments={36}
+        lightnessSegments={35}
+        saturationSegments={18}
       />
     </div>
   );
