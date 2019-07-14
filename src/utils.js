@@ -17,10 +17,10 @@ export function getSectorPath(outerRadius, a1, a2, innerRadius = 0, x = 0, y = 0
 
   if (linearApproximation) {
     return `
-      M ${Math.round(x1)} ${Math.round(y1)}
-      L ${Math.round(x2)} ${Math.round(y2)}
-      L ${Math.round(x3)} ${Math.round(y3)}
-      L ${Math.round(x4)} ${Math.round(y4)}
+      M ${x1} ${y1}
+      L ${x2} ${y2}
+      L ${x3} ${y3}
+      L ${x4} ${y4}
       Z
     `;
   }

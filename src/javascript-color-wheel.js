@@ -391,14 +391,14 @@ export default class JavascriptColorWheel {
     c.width = 2*this.state.outerRadius * dpr;
     c.height = 2*this.state.outerRadius * dpr;
     c.style.transformOrigin = '0 0';
-    c.style.transform = `scale(${1/dpr})`;
+    c.style.width = this.state.outerRadius * 2 + 'px';
+    c.style.height = this.state.outerRadius * 2 + 'px';
 
     c.addEventListener('mousemove', this.focus);
     c.addEventListener('mouseup', this.select);
     c.addEventListener('touchstart', this.focus);
     c.addEventListener('touchmove', this.focus);
     c.addEventListener('touchend', this.select);
-    el.appendChild(c);
 
     this.ctx = c.getContext('2d');
     // Scale all drawing operations by the dpr, so you
@@ -410,6 +410,8 @@ export default class JavascriptColorWheel {
     // toggle hue to render
     const hue = this.state.hue
     this.setState({hue: 0});
+
+    el.appendChild(c);
   }
 
   exit = () => {}
