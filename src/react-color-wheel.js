@@ -8,7 +8,8 @@ export default class ReactColorWheel extends React.Component {
       outerRadius: this.getOuterRadius(),
       innerRadius: this.getInnerRadius()
     });
-    this.colorWheel.onChange(()=>this.setState({}))
+    this.colorWheel.onChange(()=>this.setState({}));
+    this.colorWheel.onSelect((color)=>this.props.onChange && this.props.onChange(color));
     window.addEventListener('touchmove', this.preventDefault, {passive: false});
   }
 
@@ -66,34 +67,35 @@ export default class ReactColorWheel extends React.Component {
         onTouchMove={this.focusElement}
         onTouchEnd={this.selectElement}
       >
-        { this.colorWheel.getSegments() }
-        <circle
-          cx={0}
-          cy={0}
-          r={this.colorWheel.getState().innerRadius}
-          fill={this.colorWheel.selectedColor() || '#FFFFFF'}
-          stroke={this.colorWheel.selectedColor() || '#FFFFFF'}
-          strokeWidth={0.1}
-        />
         {
-          this.colorWheel.getState().previewHue !== null
-          &&
-          <path
-            d={this.colorWheel.getState().previewPath}
-            transform={`rotate(${this.colorWheel.getState().previewAngle})`}
-            fill={this.colorWheel.previewColor() || 'none'}
-            stroke={this.colorWheel.previewColor() || 'none'}
-            strokeWidth={0.1}
-          />
-        }
+          this
+            .colorWheel
+            .getSegments()
+            .map(
+              (segment) => (
+                <path
+                  key={`${segment.angle},${segment.hue},${segment.saturation},${segment.lightness}`}
+                  ref={
+                    current => {
+                      if (current === null) return;
+                      current.preview = () => {
+                        this.colorWheel.setState({
+                          previewHue: segment.hue,
+                          previewSaturation: segment.saturation,
+                          previewLightness: segment.lightness
+                        });
+                      }
+                      current.select = () => this.colorWheel.selectColor(segment.hue, segment.saturation, segment.lightness);
+                    }
+                  }
+                  {...this.colorWheel.svgUtils.segmentPathProps(segment)}
+                />
+              )
+            )
+          }
+        <circle {...this.colorWheel.svgUtils.innerCircleProps()}/>
+        <path {...this.colorWheel.svgUtils.previewPathProps()}/>
       </svg>
     );
-  }
-
-  selectSaturationLightness = (saturation, lightness) => {
-    this.setState({
-      saturation,
-      lightness
-    });
   }
 }
