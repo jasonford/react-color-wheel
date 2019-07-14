@@ -209,7 +209,7 @@ export default class JavascriptColorWheel {
 
   selectColorAtCoord = (x, y) => {
     const r = Math.sqrt(Math.pow(x-this.state.outerRadius, 2) + Math.pow(y-this.state.outerRadius, 2))
-    if (r < this.state.innerRadius) {
+    if (r < this.state.innerRadius && isNaN(this.state.previewHue)) {
       // final selection
       console.log('final hsl selection' ,this.state.hue, this.state.saturation, this.state.lightness);
     }
