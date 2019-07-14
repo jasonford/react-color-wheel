@@ -24,7 +24,7 @@ export default class JavascriptColorWheel {
     outerRadius = outerRadius || 15;
 
     this.state = {
-      hue: hue || 0,
+      hue: hue || null,
       saturation: saturation || 100,
       lightness: lightness || 100,
       previewHue: null,
@@ -112,7 +112,7 @@ export default class JavascriptColorWheel {
         });
       }
       if (this.pendingUpdates.all || this.pendingUpdates.hue || this.pendingUpdates.preview) {
-        ctx.fillStyle = this.getSegmentColor(this.state);
+        ctx.fillStyle = this.selectedColor();
         ctx.fill(
           ctx.arc(
             this.state.outerRadius,
@@ -160,7 +160,10 @@ export default class JavascriptColorWheel {
 
   selectedColor = () => {
     let {hue, saturation, lightness} = this.state;
-    if (hue !== undefined) {
+    if (hue === null) {
+      return 'hsl(0,100%,100%)';
+    }
+    else {
       return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     }
   }
@@ -220,6 +223,9 @@ export default class JavascriptColorWheel {
     }
   }
 
+  shouldOptimizeHueSectors = () => this.state.hueSectors.length > 36;
+  shouldOptimizeSaturationSegments = () => this.state.numSaturationSegments * this.state.numLightnessSegments > 36 * 36;
+
   selectColor = (hue, saturation, lightness) => {
     if (hue === this.state.hue) {
     // Don't need to update the lightness saturation segments in this case
@@ -247,7 +253,7 @@ export default class JavascriptColorWheel {
             this.state.innerRadius,
             this.state.outerRadius,
             this.state.outerRadius,
-            true
+            this.shouldOptimizeHueSectors()
           )
 
           //  create saturation and lightness segments and insert into sectors
@@ -282,7 +288,7 @@ export default class JavascriptColorWheel {
                     innerRadius,
                     this.state.outerRadius,
                     this.state.outerRadius,
-                    true
+                    this.shouldOptimizeSaturationSegments()
                   ),
                   innerRadius,
                   outerRadius,
@@ -314,7 +320,7 @@ export default class JavascriptColorWheel {
               this.state.innerRadius,
               this.state.outerRadius,
               this.state.outerRadius,
-              true
+              this.shouldOptimizeHueSectors()
             )
             nextAngle += otherSegmentSweep;
           })
