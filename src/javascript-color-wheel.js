@@ -67,7 +67,6 @@ export default class JavascriptColorWheel {
     this.pendingUpdates = {};
 
     this.setState = (newState) => {
-      console.log(this.renderedFrames/this.canvasUpdates)
       const oldState = this.state;
       this.state = {...oldState, ...newState};
       this.changeHandlers.forEach(handler => handler());
@@ -209,8 +208,16 @@ export default class JavascriptColorWheel {
   }
 
   selectColorAtCoord = (x, y) => {
-    const segment = this.getSegmentAtCoord(x, y);
-    segment && this.selectColor(segment.hue, segment.saturation, segment.lightness);
+    const r = Math.sqrt(Math.pow(x-this.state.outerRadius, 2) + Math.pow(y-this.state.outerRadius, 2))
+    if (r < this.state.innerRadius) {
+      // final selection
+      console.log('final hsl selection' ,this.state.hue, this.state.saturation, this.state.lightness);
+    }
+    else {
+      const segment = this.getSegmentAtCoord(x, y);
+      if (segment) this.selectColor(segment.hue, segment.saturation, segment.lightness);
+      else if (!isNaN(this.state.previewHue)) this.selectColor(this.state.previewHue, this.state.previewSaturation, this.state.previewLightness);
+    }
   }
 
   selectColor = (hue, saturation, lightness) => {
@@ -298,6 +305,8 @@ export default class JavascriptColorWheel {
             otherSegment.lightnessSaturationSectors = [];
             otherSegment.sweep = otherSegmentSweep;
             otherSegment.angle = nextAngle%360;
+            otherSegment.innerRadius = this.state.innerRadius;
+            otherSegment.outerRadius = this.state.outerRadius;
             otherSegment.pathData = getSectorPath(
               this.state.outerRadius*1.005,
               -otherSegment.angle - otherSegmentSweep/2*1.005,
