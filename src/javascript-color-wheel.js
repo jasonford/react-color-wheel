@@ -369,10 +369,16 @@ export default class JavascriptColorWheel {
 
   //  touch event handlers
   focus = e => {
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    let coord;
+    if (e.touches) coord = e.touches[0];
+    if (e.changedTouches) coord = e.changedTouches[0];
+    if (!coord) {
+      if (!this.mouseIsDown) return;
+      coord = e;
+    }
+
     const dimensions = e.currentTarget.getBoundingClientRect();
-    this.previewColorAtCoord(x - dimensions.left, y - dimensions.top);
+    this.previewColorAtCoord(coord.clientX - dimensions.left, coord.clientY - dimensions.top);
   }
 
   select = e => {
@@ -394,8 +400,9 @@ export default class JavascriptColorWheel {
     c.style.width = this.state.outerRadius * 2 + 'px';
     c.style.height = this.state.outerRadius * 2 + 'px';
 
+    c.addEventListener('mousedown', (e) => {this.focus(e); this.mouseIsDown = true})
     c.addEventListener('mousemove', this.focus);
-    c.addEventListener('mouseup', this.select);
+    c.addEventListener('mouseup', (e) => {this.select(e); this.mouseIsDown = false});
     c.addEventListener('touchstart', this.focus);
     c.addEventListener('touchmove', this.focus);
     c.addEventListener('touchend', this.select);
@@ -407,9 +414,8 @@ export default class JavascriptColorWheel {
 
     this.canvas = c;
 
-    // toggle hue to render
-    const hue = this.state.hue
-    this.setState({hue: 0});
+    // first render
+    this.updateCanvas({all:true});
 
     el.appendChild(c);
   }
