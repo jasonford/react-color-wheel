@@ -1,6 +1,9 @@
 import { getSectorRadius, getSectorPath } from './utils';
 
+// flatten an array, depth 1
 const flat = (array) => [].concat.apply([], array);
+//  check if the fields on a given 2 objects have any differences
+const isDifferent = (a, b, fields) => fields.filter( f => a[f] !== b[f]).length > 0;
 
 //  copy and paste from https://www.xarg.org/2010/06/is-an-angle-between-two-other-angles/
 //  looks hacky.. should probably use something better.
@@ -13,6 +16,7 @@ function angle_between(n, a, b) {
     return a <= n && n <= b;
   return a <= n || n <= b;
 }
+
 
 export default class JavascriptColorWheel {
   constructor({hue, saturation, lightness, hueSegments, saturationSegments, lightnessSegments, innerRadius, outerRadius}) {
@@ -58,11 +62,21 @@ export default class JavascriptColorWheel {
     this.changeHandlers = [];
     this.selectHandlers = [];
 
+    this.canvasUpdates = 0;
+    this.renderedFrames = 0;
+    this.pendingUpdates = {};
+
     this.setState = (newState) => {
-      this.state = {...this.state, ...newState};
+      console.log(this.renderedFrames/this.canvasUpdates)
+      const oldState = this.state;
+      this.state = {...oldState, ...newState};
       this.changeHandlers.forEach(handler => handler());
       if (this.canvas) {
-        this.updateCanvas();
+        this.updateCanvas({
+          all: this.canvasUpdates === 0,
+          preview: isDifferent(this.state, oldState, ['previewHue', 'previewSaturation', 'previewLightness', 'previewAngle']),
+          hue: this.state.hue !== oldState.hue
+        });
       }
     }
 
@@ -82,29 +96,40 @@ export default class JavascriptColorWheel {
     }
   }
 
-  updateCanvas() {
+  updateCanvas(shouldUpdate) {
+    this.canvasUpdates += 1;
+    this.pendingUpdates = {...this.pendingUpdates, ...shouldUpdate};
+    //  TODO: if frame gets dropped, want to batch the shouldUpdates
     cancelAnimationFrame(this.animationFrame);
     this.animationFrame = requestAnimationFrame(() => {
       const ctx = this.ctx;
-      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      this.getSegments().forEach( segment => {
-        const path = new Path2D();
-        ctx.fillStyle = this.getSegmentColor(segment);
-        path.addPath(new Path2D(segment.pathData));
-        ctx.fill(path);
-      });
-      ctx.fillStyle = this.getSegmentColor(this.state);
-      ctx.fill(
-        ctx.arc(
-          this.state.outerRadius,
-          this.state.outerRadius,
-          this.state.innerRadius,
-          0,
-          2 * Math.PI
-        )
-      );
-      ctx.fillStyle = this.previewColor();
-      this.state.previewHue !== null && ctx.fill(new Path2D(this.state.previewPath));
+      if (this.pendingUpdates.all || this.pendingUpdates.hue) {
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.getSegments().forEach( segment => {
+          const path = new Path2D();
+          ctx.fillStyle = this.getSegmentColor(segment);
+          path.addPath(new Path2D(segment.pathData));
+          ctx.fill(path);
+        });
+      }
+      if (this.pendingUpdates.all || this.pendingUpdates.hue || this.pendingUpdates.preview) {
+        ctx.fillStyle = this.getSegmentColor(this.state);
+        ctx.fill(
+          ctx.arc(
+            this.state.outerRadius,
+            this.state.outerRadius,
+            this.state.innerRadius,
+            0,
+            2 * Math.PI
+          )
+        );
+      }
+      if (this.pendingUpdates.all || this.pendingUpdates.preview) {
+        ctx.fillStyle = this.previewColor();
+        this.state.previewHue !== null && ctx.fill(new Path2D(this.state.previewPath));
+      }
+      this.pendingUpdates = {};
+      this.renderedFrames += 1;
     });
   }
 
@@ -164,8 +189,9 @@ export default class JavascriptColorWheel {
   }
 
   previewColorAtCoord = (x, y) => {
-    this.state.previewAngle = Math.round(90 - Math.atan2(x - this.state.outerRadius, y - this.state.outerRadius) * 180 / Math.PI);
-    this.state.previewPath = getSectorPath(
+    const newState = {}
+    newState.previewAngle = Math.round(90 - Math.atan2(x - this.state.outerRadius, y - this.state.outerRadius) * 180 / Math.PI);
+    newState.previewPath = getSectorPath(
       0,
       -90 - this.state.previewAngle,
       90 - this.state.previewAngle,
@@ -175,17 +201,16 @@ export default class JavascriptColorWheel {
     )
     const segment = this.getSegmentAtCoord(x, y);
     if (segment) {
-      this.state.previewHue = segment.hue;
-      this.state.previewSaturation = segment.saturation;
-      this.state.previewLightness = segment.lightness;
+      newState.previewHue = segment.hue;
+      newState.previewSaturation = segment.saturation;
+      newState.previewLightness = segment.lightness;
     }
-    this.setState({});
+    this.setState(newState);
   }
 
   selectColorAtCoord = (x, y) => {
     const segment = this.getSegmentAtCoord(x, y);
     segment && this.selectColor(segment.hue, segment.saturation, segment.lightness);
-    this.setState({});
   }
 
   selectColor = (hue, saturation, lightness) => {
@@ -244,12 +269,13 @@ export default class JavascriptColorWheel {
                   angle: lightnessSaturationSector.angle,
                   sweep: lightnessSaturationSector.sweep,
                   pathData: getSectorPath(
-                    outerRadius + 1, // adjust to cover gaps where stroke should be
-                    -lightnessSaturationSector.angle - lightnessSaturationSector.sweep/2 - 1,
-                    -lightnessSaturationSector.angle + lightnessSaturationSector.sweep/2 + 1,
+                    outerRadius*1.005, // adjust to cover gaps where stroke should be
+                    -lightnessSaturationSector.angle - lightnessSaturationSector.sweep/2*1.005,
+                    -lightnessSaturationSector.angle + lightnessSaturationSector.sweep/2*1.005,
                     innerRadius,
                     this.state.outerRadius,
-                    this.state.outerRadius
+                    this.state.outerRadius,
+                    true
                   ),
                   innerRadius,
                   outerRadius,
@@ -273,12 +299,13 @@ export default class JavascriptColorWheel {
             otherSegment.sweep = otherSegmentSweep;
             otherSegment.angle = nextAngle%360;
             otherSegment.pathData = getSectorPath(
-              this.state.outerRadius,
-              -otherSegment.angle - otherSegmentSweep/2,
-              -otherSegment.angle + otherSegmentSweep/2,
+              this.state.outerRadius*1.005,
+              -otherSegment.angle - otherSegmentSweep/2*1.005,
+              -otherSegment.angle + otherSegmentSweep/2*1.005,
               this.state.innerRadius,
               this.state.outerRadius,
-              this.state.outerRadius
+              this.state.outerRadius,
+              true
             )
             nextAngle += otherSegmentSweep;
           })
@@ -363,15 +390,17 @@ export default class JavascriptColorWheel {
     c.addEventListener('touchmove', this.focus);
     c.addEventListener('touchend', this.select);
     el.appendChild(c);
-    this.canvas = c;
 
     this.ctx = c.getContext('2d');
     // Scale all drawing operations by the dpr, so you
     // don't have to worry about the difference.
     this.ctx.scale(dpr, dpr);
 
+    this.canvas = c;
 
-    this.setState({});
+    // toggle hue to render
+    const hue = this.state.hue
+    this.setState({hue: 0});
   }
 
   exit = () => {}
