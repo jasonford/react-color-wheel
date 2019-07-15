@@ -7,7 +7,7 @@ function App() {
     <div>
       <ReactColorWheel
         radius={Math.min(window.innerHeight/2, window.innerWidth/2)}
-        onPreview={ (color) => console.log(color.hsl) }
+        onPreview={ (color) => console.log(color) }
         onSelect={ (color) => document.body.style.background = color.hsl }
       />
     </div>

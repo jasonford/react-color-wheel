@@ -40,7 +40,10 @@
       "@babel/preset-react"
     ],
     "plugins": [
-        "@babel/plugin-proposal-class-properties"
+      "@babel/plugin-proposal-class-properties"
     ]
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.5.0"
   }
 }

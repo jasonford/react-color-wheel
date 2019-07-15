@@ -1,4 +1,4 @@
-import { getSectorRadius, getSectorPath } from './utils';
+import { getSectorRadius, getSectorPath, HSLToHex } from './utils';
 
 // flatten an array, depth 1
 const flat = (array) => [].concat.apply([], array);
@@ -219,13 +219,13 @@ export default class JavascriptColorWheel {
       newState.previewLightness = segment.lightness;
     }
     this.setState(newState);
-    this.previewHandlers.forEach( handler => handler({hsl: this.previewColor()}));
+    segment && this.previewHandlers.forEach( handler => handler(this.colorExport(segment)));
   }
 
   selectColorAtCoord = (x, y) => {
     const r = Math.sqrt(Math.pow(x-this.state.outerRadius, 2) + Math.pow(y-this.state.outerRadius, 2))
     if (r < this.state.innerRadius && this.state.previewHue === null) {
-      this.selectHandlers.forEach( handler => handler({hsl: this.selectedColor()}));
+      this.selectHandlers.forEach( handler => handler(this.colorExport(this.state)) );
     }
     else {
       const segment = this.getSegmentAtCoord(x, y);
@@ -234,6 +234,13 @@ export default class JavascriptColorWheel {
         this.selectColor(this.state.previewHue, this.state.previewSaturation, this.state.previewLightness);
       }
     }
+  }
+
+  colorExport = ({hue, saturation, lightness}) => {
+    return {
+      hsl: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+      hex: HSLToHex(hue, saturation, lightness)
+    };
   }
 
   shouldOptimizeHueSectors = () => this.state.hueSectors.length > 36;
@@ -347,7 +354,7 @@ export default class JavascriptColorWheel {
         hue
       });
     }
-    this.previewHandlers.forEach( handler => handler({hsl: this.selectedColor()}));
+    this.previewHandlers.forEach( handler => handler(this.colorExport(this.state)));
   }
 
   svgUtils = {
