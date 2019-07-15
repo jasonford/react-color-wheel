@@ -1,17 +1,17 @@
 {
   "name": "react-touch-color-wheel",
   "description": "",
-  "main": "src/react-color-wheel.js",
-  "version": "1.0.1",
+  "main": "build/react-color-wheel.js",
+  "version": "1.0.2",
   "private": false,
   "dependencies": {
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
-    "react-scripts": "3.0.1"
+    "react-scripts": "3.0.0"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "BABEL_ENV=browser babel ./src --out-dir ./build --source-maps --copy-files",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -40,7 +40,7 @@
       "@babel/preset-react"
     ],
     "plugins": [
-      "@babel/plugin-proposal-class-properties"
+        "@babel/plugin-proposal-class-properties"
     ]
   }
 }
