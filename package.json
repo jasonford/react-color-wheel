@@ -1,8 +1,8 @@
 {
-  "name": "color-wheel",
+  "name": "react-touch-color-wheel",
   "description": "",
   "main": "src/react-color-wheel.js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": false,
   "dependencies": {
     "react": "^16.8.6",
@@ -33,5 +33,14 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/jasonford/react-color-wheel.git"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env",
+      "@babel/preset-react"
+    ],
+    "plugins": [
+      "@babel/plugin-proposal-class-properties"
+    ]
   }
 }
