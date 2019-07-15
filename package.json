@@ -2,7 +2,7 @@
   "name": "react-touch-color-wheel",
   "description": "",
   "main": "build/react-color-wheel.js",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": false,
   "dependencies": {
     "react": "^16.8.6",
